@@ -14,14 +14,20 @@ case norml, play, finish
 
 class HatTricksViewModel: ObservableObject {
     init() {
-        hatItems = Array(0..<levelModel.hatsCount)
-        ballCapNumber = hatItems.randomElement()!
+        let rightIndex = Array(0..<levelModel.hatsCount).randomElement()!
+        for i in Array(0..<levelModel.hatsCount) {
+            let hat = HatTricksHatModel(id: i, showResult: false, result: rightIndex == i)
+            if rightIndex == i {
+                hasBallHat = hat
+            }
+            hatItems.append(hat)
+        }
         ballState = .norml
     }
-    var ballCapNumber: Int!
+    var hasBallHat: HatTricksHatModel!
     @Published var levelModel: HatTricksLevelModel = .init()
     @Published var ballModel: HatTricksBallModel = .init()
-    @Published var hatItems: [Int]!
+    @Published var hatItems: [HatTricksHatModel] = []
     @Published var isAnimating = false
     @Published var ballState: BallShowStyle = .norml
     var displayFrames: [Int: CGRect] = [:]
@@ -75,7 +81,7 @@ class HatTricksViewModel: ObservableObject {
     }
     
     func landingBallToCap(index: Int) {
-        if let has = hatItems.firstIndex(of: ballCapNumber), let target = displayFrames[has] {
+        if let has = hatItems.firstIndex(where: { $0.id == hasBallHat.id }), let target = displayFrames[has] {
             ballModel.offsetX = target.minX - ballDisplayFrame.minX + 35 * 0.78
             ballModel.offsetY = target.minY - ballDisplayFrame.minY
             ballModel.rotation += 360
@@ -90,7 +96,12 @@ class HatTricksViewModel: ObservableObject {
             withAnimation(.linear(duration: 0.3)) {
                 self.ballModel.offsetY -= 60
             }
-            if ballCapNumber == hatItems[index] {
+            print(index)
+            if let has = hatItems.firstIndex(where: { $0.id == hasBallHat.id }) {
+                hatItems[index].showResult = true
+                hatItems[has].showResult = true
+            }
+            if hasBallHat == hatItems[index] {
                 print("结果 对了")
             } else {
                 print("结果 错了")
@@ -99,10 +110,25 @@ class HatTricksViewModel: ObservableObject {
     }
     
     func resetBall() {
+        hatItems = hatItems.map { item in
+            var mutableItem = item
+            mutableItem.showResult = false
+            return mutableItem
+        }
         ballModel.offsetX = 0
         ballModel.offsetY = 0
         ballModel.rotation = 0
         ballModel.scale = 1
+    }
+    
+    func beginPlayingGame() {
+        resetBall()
+        withAnimation(.linear(duration: 1)) {
+            landingBallToCap(index: hasBallHat.id)
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            self.ballState = .play
+        }
     }
 }
 
@@ -120,28 +146,49 @@ extension HatTricksViewModel {
 
 extension HatTricksViewModel {
     func changeGameLevel(animatedTiming: Double) {
-        levelModel.animatedTiming += animatedTiming
+        let target = levelModel.animatedTiming + animatedTiming
+        if target > 0.3 && target < 3 {
+            levelModel.animatedTiming = target
+        }
     }
     func changeGameLevel(movingCount: Int) {
-        levelModel.movingCount += movingCount
+        let target = levelModel.movingCount + movingCount
+        if target > 0 && target < 50 {
+            levelModel.movingCount = target
+        }
     }
     func changeGameLevel(hatsCount: Int) {
-        levelModel.hatsCount += hatsCount
-        hatItems = Array(0..<levelModel.hatsCount)
+        let target = levelModel.hatsCount + hatsCount
+        if target > 1 && target < 7 {
+            levelModel.hatsCount = target
+            var items: [HatTricksHatModel] = []
+            let rightIndex = Array(0..<levelModel.hatsCount).randomElement()!
+            for i in Array(0..<levelModel.hatsCount) {
+                let hat = HatTricksHatModel(id: i, showResult: false, result: rightIndex == i)
+                if rightIndex == i {
+                    hasBallHat = hat
+                }
+                items.append(hat)
+            }
+            hatItems = items
+        }
+    }
+    func changeGameLevel(colums: Int) {
+        let target = levelModel.colums + colums
+        if target > 1 && target < 4 {
+            levelModel.colums = target
+        }
     }
     func geoWidth() -> CGFloat {
         print(CGFloat(levelModel.colums) * getCapItemWidth() + CGFloat(levelModel.colums) * getCapItemSpace())
         return CGFloat(levelModel.colums) * getCapItemWidth() + CGFloat(levelModel.colums) * getCapItemSpace()
-    }
-    func changeGameLevel(colums: Int) {
-        levelModel.colums += colums
     }
 }
 
 
 struct HatTricksLevelModel {
     var animatedTiming: Double = 0.3
-    var movingCount: Int = 1
+    var movingCount: Int = 3
     var hatsCount: Int = 3
     var colums: Int = 2
 }
@@ -151,4 +198,13 @@ struct HatTricksBallModel {
     var scale: CGFloat = 1.0
     var offsetX: CGFloat = 0
     var offsetY: CGFloat = 0
+}
+
+struct HatTricksHatModel: Equatable {
+    let id: Int
+    var showResult: Bool
+    var result: Bool
+    static func == (lhs: HatTricksHatModel, rhs: HatTricksHatModel) -> Bool {
+        return lhs.id == rhs.id
+    }
 }

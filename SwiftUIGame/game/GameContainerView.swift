@@ -48,7 +48,7 @@ struct GameContainerView<Content: View, ViewModel: GameViewModelProtocol>: View 
                     Spacer()
                     content
                         .frame(maxWidth: .infinity, maxHeight: KHEIGHT - KNavHeight - BOTTOM_HEIGHT - 110)
-                        .background { Color.blue.opacity(0.2) }
+//                        .background { Color.blue.opacity(0.2) }
                     Spacer()
                 }
                 nextLevView.opacity(viewModel.gameState != .none ? 1 : 0).padding(.bottom, 6)

@@ -12,12 +12,16 @@ struct HatTricksGameView: View {
 
     var body: some View {
         ZStack {
-            VStack(spacing: 40) {
+            VStack(spacing: 60) {
                 ballView
                 capsView
                 Text("").frame(height: 104)
             }
-            .background(.yellow)
+            .onAppear(perform: {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    viewModel.beginPlayingGame()
+                }
+            })
             HatTricksDebugView()
         }
         .environmentObject(viewModel)
@@ -58,7 +62,14 @@ struct HatTricksGameView: View {
                                 viewModel.clickHatToCheckBallResult(index: index)
                             }
                             .overlay {
-                                Text("\(viewModel.hatItems[index])\nx:\(Int(geoFrame.minX))\ny:\(Int(geoFrame.minY))").foregroundColor(.orange)
+                                Text("\(viewModel.hatItems[index].id)\n\(viewModel.hatItems[index].showResult) [\(viewModel.hatItems[index].result)]\nx:\(Int(geoFrame.minX))\ny:\(Int(geoFrame.minY))").foregroundColor(.black)
+                                    .font(.system(size: 12))
+                            }
+                            .overlay(alignment: .bottomTrailing) {
+                                Image(viewModel.hatItems[index].result ? "正确" : "错误")
+                                    .frame(width: 32, height: 32)
+                                    .opacity(viewModel.hatItems[index].showResult ? 1 : 0)
+                                    .animation(.linear(duration: 0.3), value: viewModel.hatItems[index].showResult)
                             }
                     }
                 }
