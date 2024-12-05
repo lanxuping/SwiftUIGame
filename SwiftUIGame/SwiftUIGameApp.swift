@@ -11,7 +11,9 @@ import SwiftUI
 struct SwiftUIGameApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            GameContainerView(viewModel: VM(gameState: .none, isStop: false)) {
+                HatTricksGameView()
+            }
         }
     }
 }
