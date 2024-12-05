@@ -11,9 +11,11 @@ import SwiftUI
 struct SwiftUIGameApp: App {
     var body: some Scene {
         WindowGroup {
-            GameContainerView(viewModel: VM(gameState: .none, isStop: false)) {
-                HatTricksGameView()
-            }
+//            GameContainerView(viewModel: VM(gameState: .none, isStop: false)) {
+//                HatTricksGameView()
+//            }
+            LandingAniView()
+            AnimationDataMonitorGameContentView()
         }
     }
 }

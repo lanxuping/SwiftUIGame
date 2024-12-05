@@ -7,33 +7,82 @@
 
 import SwiftUI
 
+struct VectorPoint: VectorArithmetic {
+    var point: CGPoint
+
+    // MARK: - VectorArithmetic Protocol Requirements
+
+    static var zero: VectorPoint {
+        return VectorPoint(point: .zero)
+    }
+
+    var magnitudeSquared: Double {
+        return Double(point.x * point.x + point.y * point.y)
+    }
+
+    mutating func scale(by rhs: Double) {
+        point.x *= rhs
+        point.y *= rhs
+    }
+
+    static func + (lhs: VectorPoint, rhs: VectorPoint) -> VectorPoint {
+        return VectorPoint(point: CGPoint(x: lhs.point.x + rhs.point.x, y: lhs.point.y + rhs.point.y))
+    }
+
+    static func - (lhs: VectorPoint, rhs: VectorPoint) -> VectorPoint {
+        return VectorPoint(point: CGPoint(x: lhs.point.x - rhs.point.x, y: lhs.point.y - rhs.point.y))
+    }
+
+    static func += (lhs: inout VectorPoint, rhs: VectorPoint) {
+        lhs = lhs + rhs
+    }
+
+    static func -= (lhs: inout VectorPoint, rhs: VectorPoint) {
+        lhs = lhs - rhs
+    }
+
+    static func * (lhs: VectorPoint, rhs: Double) -> VectorPoint {
+        return VectorPoint(point: CGPoint(x: lhs.point.x * rhs, y: lhs.point.y * rhs))
+    }
+
+    static func / (lhs: VectorPoint, rhs: Double) -> VectorPoint {
+        return VectorPoint(point: CGPoint(x: lhs.point.x / rhs, y: lhs.point.y / rhs))
+    }
+
+    static func *= (lhs: inout VectorPoint, rhs: Double) {
+        lhs = lhs * rhs
+    }
+
+    static func /= (lhs: inout VectorPoint, rhs: Double) {
+        lhs = lhs / rhs
+    }
+}
+
 struct SkewedOffsetdd: GeometryEffect {
     var scale: CGFloat
     var rotation: CGFloat
-    var offsetX: CGFloat
-    var offsetY: CGFloat
+    var point: VectorPoint
 
-    var animatableData: AnimatablePair<CGFloat, AnimatablePair<CGFloat, AnimatablePair<CGFloat, CGFloat>>> {
+    var animatableData: AnimatablePair<CGFloat, AnimatablePair<CGFloat, VectorPoint>> {
         get {
-            AnimatablePair(scale, AnimatablePair(rotation, AnimatablePair(offsetX, offsetY)))
+            AnimatablePair(scale, AnimatablePair(rotation, point))
         }
         set {
             scale = newValue.first
             rotation = newValue.second.first
-            offsetX = newValue.second.second.first
-            offsetY = newValue.second.second.second
+            point = newValue.second.second
         }
     }
 
     func effectValue(size: CGSize) -> ProjectionTransform {
-        print(scale, rotation, offsetX, offsetY)
+        print(scale, rotation, point)
         let centerX = size.width / 2
         let centerY = size.height / 2
         let translationToOrigin = CGAffineTransform(translationX: -centerX, y: -centerY)
         let rotationTransform = CGAffineTransform(rotationAngle: rotation * .pi / 180)
         let scaleTransform = CGAffineTransform(scaleX: scale, y: scale)
         let translationBack = CGAffineTransform(translationX: centerX, y: centerY)
-        let translationTransform = CGAffineTransform(translationX: offsetX, y: offsetY)
+        let translationTransform = CGAffineTransform(translationX: point.point.x, y: point.point.y)
         
         let combinedTransform = translationToOrigin
             .concatenating(rotationTransform)
@@ -49,19 +98,20 @@ struct LandingAniView: View {
     @State private var scale: CGFloat = 1.0 // 缩放因子
     @State private var offsetX: CGFloat = 0 // 位移距离
     @State private var offsetY: CGFloat = 1.0 // 透明度
+    @State private var point: CGPoint = .zero
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             Color.blue.ignoresSafeArea()
             Image("礼盒")
                 .frame(width: 100, height: 100)
-                .modifier(SkewedOffsetdd(scale: scale, rotation: rotation, offsetX: offsetX, offsetY: offsetY))
+                .modifier(SkewedOffsetdd(scale: scale, rotation: rotation, point: VectorPoint(point: point)))
                 .onTapGesture {
                     withAnimation(Animation.linear(duration: 2)) {
                         rotation -= 720
                         scale -= 0.22
-                        offsetX += 100
-                        offsetY += 150
+                        point.x += 100
+                        point.y += 150
                     }
                 }
             HStack {
@@ -69,8 +119,8 @@ struct LandingAniView: View {
                     withAnimation(.linear(duration: 1.5)) {
                         rotation -= 720
                         scale -= 0.22
-                        offsetX += 50
-                        offsetY += 150
+                        point.x += 50
+                        point.y += 150
                     }
                 } label: {
                     Text("降低")
@@ -79,8 +129,8 @@ struct LandingAniView: View {
                     withAnimation(.linear(duration: 1.5)) {
                         rotation = 0
                         scale = 1
-                        offsetX = 0
-                        offsetY = 0
+                        point.x = 0
+                        point.y = 0
                     }
                 } label: {
                     Text("上升")
